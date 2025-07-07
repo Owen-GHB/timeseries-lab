@@ -1,0 +1,235 @@
+/* Global styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0f0f0f;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
+/* App layout */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  padding: 1rem 2rem;
+  border-bottom: 2px solid #333;
+}
+
+.app-header h1 {
+  color: #00ff88;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.app-header p {
+  color: #aaa;
+  font-size: 1rem;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* Control panel */
+.control-pane {
+  width: 300px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  height: fit-content;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.control-section {
+  border-bottom: 1px solid #333;
+  padding-bottom: 1rem;
+}
+
+.control-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.control-section h3 {
+  color: #00ff88;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+/* Radio buttons */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.radio-group label:hover {
+  background-color: #2a2a2a;
+}
+
+.radio-group input[type="radio"] {
+  accent-color: #00ff88;
+}
+
+/* Play button */
+.play-button {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+  color: #000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.play-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+}
+
+.play-button.paused {
+  background: linear-gradient(135deg, #ff6600 0%, #cc5500 100%);
+}
+
+/* Speed controls */
+.speed-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.speed-controls label {
+  font-weight: 500;
+  color: #ccc;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.speed-buttons button {
+  background: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: monospace;
+}
+
+.speed-buttons button:hover {
+  background: #444;
+  border-color: #666;
+}
+
+.speed-buttons button.active {
+  background: #00ff88;
+  color: #000;
+  border-color: #00ff88;
+  font-weight: 600;
+}
+
+/* Status info */
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.status-info div {
+  background: #0a0a0a;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border-left: 3px solid #00ff88;
+}
+
+/* Canvas pane */
+.canvas-pane {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .app-content {
+    flex-direction: column;
+  }
+  
+  .control-pane {
+    width: 100%;
+  }
+  
+  .control-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .control-section {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .app-content {
+    padding: 0.5rem;
+  }
+  
+  .control-panel {
+    flex-direction: column;
+  }
+}
