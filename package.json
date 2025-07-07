@@ -6,14 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "dependencies": {
     "preact": "^10.19.3"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.7.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.10.6",
+    "jest": "^30.0.4",
+    "ts-jest": "^29.4.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.10"
   }

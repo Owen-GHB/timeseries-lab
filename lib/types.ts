@@ -21,6 +21,25 @@ export interface SignalGenerator {
 export interface ForecastModel {
   forecast(t: number, horizon: number): number[];
   name: string;
+  updateTimeSeries(timeSeries: TimeSeries): void;
+  updateParams(newParams: any): void; // Consider using a more specific type if possible
+}
+
+export interface ARParams {
+  p: number; // Order of the autoregressive part
+  coefficients?: number[]; // Optional pre-defined coefficients
+}
+
+export interface MAParams {
+  q: number; // Order of the moving average part
+  coefficients?: number[]; // Optional pre-defined coefficients
+  errors?: number[]; // Past errors, needed for MA model
+}
+
+export interface ARMAParams extends ARParams, MAParams {}
+
+export interface ARIMAParams extends ARMAParams {
+  d: number; // Degree of differencing
 }
 
 export type SignalType = 'sine' | 'brownian';
