@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { CanvasPlotter } from './components/CanvasPlotter';
-import { ControlPanel } from './components/ControlPanel';
+import { ControlPanel, GeneratorParams, ForecasterParams } from './components/ControlPanel';
 import { SignalBuffer } from '@lib/utils/SignalBuffer';
-import { SineWaveGenerator } from '@lib/generators/SineGenerator';
-import { BrownianMotionGenerator } from '@lib/generators/BrownianMotionGenerator';
-import { LaggedGradientForecaster } from '@lib/forecasters/LaggedGradientForecaster';
+import { SineWaveGenerator, SineWaveParams } from '@lib/generators/SineGenerator';
+import { BrownianMotionGenerator, BrownianMotionParams } from '@lib/generators/BrownianMotionGenerator';
+import { LaggedGradientForecaster, LaggedGradientParams } from '@lib/forecasters/LaggedGradientForecaster';
 import { SignalType, SignalGenerator } from '@lib/types';
 import './App.css';
+
+const initialSineParams: Partial<SineWaveParams> = { amplitude: 2, frequency: 0.5, phase: 0, offset: 0 };
+const initialBrownianParams: Partial<BrownianMotionParams> = { volatility: 0.3, drift: 0.05, initialValue: 0 };
+const initialLaggedGradientParams: Partial<LaggedGradientParams> = { lookbackPeriod: 15, smoothingFactor: 0.4 };
 
 function App() {
   const [signalType, setSignalType] = useState<SignalType>('brownian');
@@ -16,34 +20,42 @@ function App() {
   const [data, setData] = useState<any[]>([]);
   const [forecasts, setForecasts] = useState<any[]>([]);
 
+  const [generatorParams, setGeneratorParams] = useState<GeneratorParams>({
+    sine: initialSineParams,
+    brownian: initialBrownianParams,
+  });
+  const [forecasterParams, setForecasterParams] = useState<ForecasterParams>({
+    laggedGradient: initialLaggedGradientParams,
+  });
+
   const bufferRef = useRef<SignalBuffer | null>(null);
+  const generatorRef = useRef<SignalGenerator | null>(null);
   const forecasterRef = useRef<LaggedGradientForecaster | null>(null);
   const intervalRef = useRef<number | null>(null);
 
-  // Initialize signal generators
-  const createGenerator = (type: SignalType): SignalGenerator => {
-    switch (type) {
-      case 'sine':
-        return new SineWaveGenerator({
-          amplitude: 2,
-          frequency: 0.5,
-          phase: 0,
-          offset: 0
-        });
-      case 'brownian':
-        return new BrownianMotionGenerator({
-          volatility: 0.3,
-          drift: 0.05,
-          initialValue: 0
-        });
-      default:
-        return new BrownianMotionGenerator();
+  // Initialize or update signal generator
+  const createOrUpdateGenerator = (type: SignalType, params: Partial<SineWaveParams> | Partial<BrownianMotionParams>): SignalGenerator => {
+    if (type === 'sine') {
+      const sineGen = new SineWaveGenerator(params as Partial<SineWaveParams>);
+      generatorRef.current = sineGen;
+      return sineGen;
+    } else { // brownian
+      const brownianGen = new BrownianMotionGenerator(params as Partial<BrownianMotionParams>);
+      // Reset brownian motion internal state if initial value changes
+      if (generatorRef.current instanceof BrownianMotionGenerator &&
+          (params as BrownianMotionParams).initialValue !== (generatorParams.brownian as BrownianMotionParams).initialValue) {
+        brownianGen.reset((params as BrownianMotionParams).initialValue);
+      }
+      generatorRef.current = brownianGen;
+      return brownianGen;
     }
   };
 
-  // Initialize signal buffer and forecaster
+  // Initialize or update signal buffer and forecaster
   useEffect(() => {
-    const generator = createGenerator(signalType);
+    const currentGenParams = signalType === 'sine' ? generatorParams.sine : generatorParams.brownian;
+    const generator = createOrUpdateGenerator(signalType, currentGenParams);
+
     bufferRef.current = new SignalBuffer(generator, {
       bufferAheadSeconds: 3,
       bufferBehindSeconds: 10,
@@ -52,15 +64,12 @@ function App() {
 
     // Initialize with some data
     const initialSeries = generator.generateSeries(0, 2, 0.02);
-    forecasterRef.current = new LaggedGradientForecaster(initialSeries, {
-      lookbackPeriod: 15,
-      smoothingFactor: 0.4
-    });
+    forecasterRef.current = new LaggedGradientForecaster(initialSeries, forecasterParams.laggedGradient);
 
     setCurrentTime(0);
     setData([]);
     setForecasts([]);
-  }, [signalType]);
+  }, [signalType, generatorParams, forecasterParams]);
 
   // Main animation loop
   useEffect(() => {
@@ -127,6 +136,23 @@ function App() {
     setForecasts([]); // Clear old forecasts
   };
 
+  const handleGeneratorParamsChange = (
+    type: SignalType,
+    params: Partial<SineWaveParams> | Partial<BrownianMotionParams>
+  ) => {
+    setGeneratorParams(prevParams => ({
+      ...prevParams,
+      [type]: params,
+    }));
+  };
+
+  const handleForecasterParamsChange = (params: Partial<LaggedGradientParams>) => {
+    setForecasterParams(prevParams => ({
+      ...prevParams,
+      laggedGradient: params,
+    }));
+  };
+
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
@@ -152,6 +178,10 @@ function App() {
             playbackSpeed={playbackSpeed}
             onPlaybackSpeedChange={handlePlaybackSpeedChange}
             currentTime={currentTime}
+            generatorParams={generatorParams}
+            onGeneratorParamsChange={handleGeneratorParamsChange}
+            forecasterParams={forecasterParams}
+            onForecasterParamsChange={handleForecasterParamsChange}
           />
         </div>
         
