@@ -41,7 +41,7 @@ describe('BrownianMotionGenerator', () => {
   });
 
   it('generateSeries method should produce a TimeSeries output', () => {
-    const generator = new BrownianMotionGenerator();
+    const generator = new BrownianMotionGenerator(defaultParams);
     const series = generator.generateSeries(0, 10, 1);
     expect(series).toHaveProperty('data');
     expect(series).toHaveProperty('tickDuration', 1);
