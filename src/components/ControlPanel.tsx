@@ -8,9 +8,21 @@ export interface GeneratorParams {
   brownian: Partial<BrownianMotionParams>;
 }
 
+export interface ARIMAFamilyParams {
+  p?: number;
+  d?: number;
+  q?: number;
+}
+
 export interface ForecasterParams {
   laggedGradient: Partial<LaggedGradientParams>;
+  ar: Partial<ARIMAFamilyParams>;
+  ma: Partial<ARIMAFamilyParams>;
+  arma: Partial<ARIMAFamilyParams>;
+  arima: Partial<ARIMAFamilyParams>;
 }
+
+import { ForecasterType } from 'src/App'; // Assuming App.tsx is in src
 
 interface ControlPanelProps {
   signalType: SignalType;
@@ -22,8 +34,10 @@ interface ControlPanelProps {
   currentTime: number;
   generatorParams: GeneratorParams;
   onGeneratorParamsChange: (type: SignalType, params: Partial<SineWaveParams> | Partial<BrownianMotionParams>) => void;
+  selectedForecasterType: ForecasterType;
+  onSelectedForecasterChange: (type: ForecasterType) => void;
   forecasterParams: ForecasterParams;
-  onForecasterParamsChange: (params: Partial<LaggedGradientParams>) => void;
+  onForecasterParamsChange: (type: ForecasterType, params: Partial<LaggedGradientParams> | Partial<ARIMAFamilyParams>) => void;
 }
 
 export function ControlPanel({
@@ -36,10 +50,13 @@ export function ControlPanel({
   currentTime,
   generatorParams,
   onGeneratorParamsChange,
+  selectedForecasterType,
+  onSelectedForecasterChange,
   forecasterParams,
   onForecasterParamsChange,
 }: ControlPanelProps) {
   const speedOptions = [0.5, 1, 2, 4, 8];
+  const forecasterTypes: ForecasterType[] = ['laggedGradient', 'AR', 'MA', 'ARMA', 'ARIMA'];
 
   const handleSineParamChange = (param: keyof SineWaveParams, value: string) => {
     const numValue = parseFloat(value);
@@ -58,9 +75,24 @@ export function ControlPanel({
   const handleLaggedGradientParamChange = (param: keyof LaggedGradientParams, value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      onForecasterParamsChange({ ...forecasterParams.laggedGradient, [param]: numValue });
+      onForecasterParamsChange('laggedGradient', { ...forecasterParams.laggedGradient, [param]: numValue });
     }
   };
+
+  const handleArimaFamilyParamChange = (
+    type: ForecasterType,
+    param: keyof ARIMAFamilyParams,
+    value: string
+  ) => {
+    const numValue = parseInt(value, 10); // p, d, q are integers
+    if (!isNaN(numValue) && numValue >= 0) {
+      // Ensure type is one of the ARIMA family keys in ForecasterParams
+      if (type === 'ar' || type === 'ma' || type === 'arma' || type === 'arima') {
+        onForecasterParamsChange(type, { ...forecasterParams[type], [param]: numValue });
+      }
+    }
+  };
+
 
   return (
     <div className="control-panel">
@@ -191,28 +223,89 @@ export function ControlPanel({
       </div>
 
       <div className="control-section">
-        <h4>Forecaster: Lagged Gradient</h4>
-        <div className="param-group">
-          <label>Lookback Period:</label>
-          <input
-            type="number"
-            step="1"
-            min="1"
-            value={forecasterParams.laggedGradient.lookbackPeriod}
-            onInput={(e) => handleLaggedGradientParamChange('lookbackPeriod', (e.target as HTMLInputElement).value)}
-          />
+        <h3>Forecaster Type</h3>
+        <div className="radio-group">
+          {forecasterTypes.map(type => (
+            <label key={type}>
+              <input
+                type="radio"
+                name="forecasterType"
+                value={type}
+                checked={selectedForecasterType === type}
+                onChange={() => onSelectedForecasterChange(type)}
+              />
+              {type.toUpperCase()}
+            </label>
+          ))}
         </div>
-        <div className="param-group">
-          <label>Smoothing Factor:</label>
-          <input
-            type="number"
-            step="0.05"
-            min="0"
-            max="1"
-            value={forecasterParams.laggedGradient.smoothingFactor}
-            onInput={(e) => handleLaggedGradientParamChange('smoothingFactor', (e.target as HTMLInputElement).value)}
-          />
-        </div>
+      </div>
+
+      <div className="control-section">
+        <h4>Forecaster Parameters: {selectedForecasterType.toUpperCase()}</h4>
+        {selectedForecasterType === 'laggedGradient' && (
+          <>
+            <div className="param-group">
+              <label>Lookback Period:</label>
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={forecasterParams.laggedGradient.lookbackPeriod}
+                onInput={(e) => handleLaggedGradientParamChange('lookbackPeriod', (e.target as HTMLInputElement).value)}
+              />
+            </div>
+            <div className="param-group">
+              <label>Smoothing Factor:</label>
+              <input
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                value={forecasterParams.laggedGradient.smoothingFactor}
+                onInput={(e) => handleLaggedGradientParamChange('smoothingFactor', (e.target as HTMLInputElement).value)}
+              />
+            </div>
+          </>
+        )}
+
+        {(selectedForecasterType === 'AR' || selectedForecasterType === 'ARMA' || selectedForecasterType === 'ARIMA') && (
+          <div className="param-group">
+            <label>AR Order (p):</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={forecasterParams[selectedForecasterType]?.p ?? ''}
+              onInput={(e) => handleArimaFamilyParamChange(selectedForecasterType, 'p', (e.target as HTMLInputElement).value)}
+            />
+          </div>
+        )}
+
+        {(selectedForecasterType === 'ARIMA') && (
+          <div className="param-group">
+            <label>Differencing Order (d):</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={forecasterParams.arima?.d ?? ''}
+              onInput={(e) => handleArimaFamilyParamChange('arima', 'd', (e.target as HTMLInputElement).value)}
+            />
+          </div>
+        )}
+
+        {(selectedForecasterType === 'MA' || selectedForecasterType === 'ARMA' || selectedForecasterType === 'ARIMA') && (
+          <div className="param-group">
+            <label>MA Order (q):</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={forecasterParams[selectedForecasterType]?.q ?? ''}
+              onInput={(e) => handleArimaFamilyParamChange(selectedForecasterType, 'q', (e.target as HTMLInputElement).value)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="control-section">

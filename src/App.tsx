@@ -5,8 +5,14 @@ import { SignalBuffer } from '@lib/utils/SignalBuffer';
 import { SineWaveGenerator, SineWaveParams } from '@lib/generators/SineGenerator';
 import { BrownianMotionGenerator, BrownianMotionParams } from '@lib/generators/BrownianMotionGenerator';
 import { LaggedGradientForecaster, LaggedGradientParams } from '@lib/forecasters/LaggedGradientForecaster';
-import { SignalType, SignalGenerator } from '@lib/types';
+import { ARForecaster } from '@lib/forecasters/ARForecaster';
+import { MAForecaster } from '@lib/forecasters/MAForecaster';
+import { ARMAForecaster } from '@lib/forecasters/ARMAForecaster';
+import { ARIMAForecaster } from '@lib/forecasters/ARIMAForecaster';
+import { SignalType, SignalGenerator, ForecastModel, ARIMAParams } from '@lib/types';
 import './App.css';
+
+export type ForecasterType = 'laggedGradient' | 'AR' | 'MA' | 'ARMA' | 'ARIMA';
 
 const initialSineParams: Partial<SineWaveParams> = { amplitude: 2, frequency: 0.5, phase: 0, offset: 0 };
 const initialBrownianParams: Partial<BrownianMotionParams> = { volatility: 0.3, drift: 0.05, initialValue: 0 };
@@ -24,13 +30,18 @@ function App() {
     sine: initialSineParams,
     brownian: initialBrownianParams,
   });
+  const [selectedForecasterType, setSelectedForecasterType] = useState<ForecasterType>('laggedGradient');
   const [forecasterParams, setForecasterParams] = useState<ForecasterParams>({
     laggedGradient: initialLaggedGradientParams,
+    ar: { p: 1 },
+    ma: { q: 1 },
+    arma: { p: 1, q: 1 },
+    arima: { p: 1, d: 0, q: 1 },
   });
 
   const bufferRef = useRef<SignalBuffer | null>(null);
   const generatorRef = useRef<SignalGenerator | null>(null);
-  const forecasterRef = useRef<LaggedGradientForecaster | null>(null);
+  const forecasterRef = useRef<ForecastModel | null>(null);
   const intervalRef = useRef<number | null>(null);
 
   // Initialize or update signal generator
@@ -64,12 +75,42 @@ function App() {
 
     // Initialize with some data
     const initialSeries = generator.generateSeries(0, 2, 0.02);
-    forecasterRef.current = new LaggedGradientForecaster(initialSeries, forecasterParams.laggedGradient);
+    // forecasterRef.current = new LaggedGradientForecaster(initialSeries, forecasterParams.laggedGradient);
+    createOrUpdateForecaster(selectedForecasterType, forecasterParams, initialSeries);
+
 
     setCurrentTime(0);
     setData([]);
     setForecasts([]);
-  }, [signalType, generatorParams, forecasterParams]);
+  }, [signalType, generatorParams, selectedForecasterType, forecasterParams]);
+
+  const createOrUpdateForecaster = (
+    type: ForecasterType,
+    params: ForecasterParams,
+    initialSeries: ReturnType<SignalGenerator['generateSeries']>
+  ): ForecastModel => {
+    let forecaster: ForecastModel;
+    switch (type) {
+      case 'AR':
+        forecaster = new ARForecaster(initialSeries, params.ar as ARIMAParams);
+        break;
+      case 'MA':
+        forecaster = new MAForecaster(initialSeries, params.ma as ARIMAParams);
+        break;
+      case 'ARMA':
+        forecaster = new ARMAForecaster(initialSeries, params.arma as ARIMAParams);
+        break;
+      case 'ARIMA':
+        forecaster = new ARIMAForecaster(initialSeries, params.arima as ARIMAParams);
+        break;
+      case 'laggedGradient':
+      default:
+        forecaster = new LaggedGradientForecaster(initialSeries, params.laggedGradient);
+        break;
+    }
+    forecasterRef.current = forecaster;
+    return forecaster;
+  };
 
   // Main animation loop
   useEffect(() => {
@@ -146,10 +187,15 @@ function App() {
     }));
   };
 
-  const handleForecasterParamsChange = (params: Partial<LaggedGradientParams>) => {
+  const handleSelectedForecasterChange = (type: ForecasterType) => {
+    setSelectedForecasterType(type);
+    setForecasts([]); // Clear old forecasts
+  }
+
+  const handleForecasterParamsChange = (type: ForecasterType, params: Partial<LaggedGradientParams> | Partial<ARIMAParams>) => {
     setForecasterParams(prevParams => ({
       ...prevParams,
-      laggedGradient: params,
+      [type]: params,
     }));
   };
 
@@ -180,6 +226,8 @@ function App() {
             currentTime={currentTime}
             generatorParams={generatorParams}
             onGeneratorParamsChange={handleGeneratorParamsChange}
+            selectedForecasterType={selectedForecasterType}
+            onSelectedForecasterChange={handleSelectedForecasterChange}
             forecasterParams={forecasterParams}
             onForecasterParamsChange={handleForecasterParamsChange}
           />
