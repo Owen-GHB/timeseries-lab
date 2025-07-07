@@ -80,7 +80,9 @@ export class LaggedGradientForecaster implements ForecastModel {
     const forecasts: number[] = [];
 
     for (let i = 1; i <= horizon; i++) {
-      const futureT = t + (i * this.timeSeries.tickDuration);
+      // t is the time of the first forecast point.
+      // For i=1, futureT should be t. For i=2, futureT should be t + tickDuration, etc.
+      const futureT = t + ((i - 1) * this.timeSeries.tickDuration);
       const dt = futureT - lastPoint.t;
       const forecastValue = lastPoint.x + (gradient * dt);
       forecasts.push(forecastValue);

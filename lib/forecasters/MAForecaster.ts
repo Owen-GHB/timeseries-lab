@@ -64,11 +64,13 @@ export class MAForecaster implements ForecastModel {
     // We need to calculate the new error term.
 
     if (newDataPoint !== undefined && this.timeSeries.data.length > 0) {
-        const lastForecast = this.calculateForecastForErrorUpdate(); // Forecast for the point that just arrived
-        const newError = (newDataPoint - this.seriesMean) - lastForecast;
+        const currentSeriesMean = this.seriesMean; // Use the mean consistent with the current series state
+        const lastForecast = this.calculateForecastForErrorUpdate();
 
+        const newError = (Number(newDataPoint) - currentSeriesMean) - lastForecast;
         this.errors.push(newError);
-        if (this.errors.length > this.params.q) {
+
+        if (this.errors.length > this.params.q && this.params.q > 0) { // Ensure q > 0 before shift
             this.errors.shift();
         }
         this.meanLog.push(`New data point. Last forecast: ${lastForecast.toFixed(2)}, New error: ${newError.toFixed(2)}`);
